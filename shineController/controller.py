@@ -1,5 +1,5 @@
 import time
-import devicemanager
+from shineController import devicemanager
 
 class controller:
     def __init__(self, ip, port, stations):
@@ -25,15 +25,17 @@ class controller:
         for stationId in orderedStationIds:
             if not any(device["id"] == stationId for device in devices):
                 print("device not found: " + stationId)
-                time.sleep(1)
                 self.validateStations(orderedStationIds)
+                time.sleep(1)
             else:
                 for device in devices:
                     if device["id"] == stationId:
                         self.stations.append(device)
-        print("All devices found")
 
-    def setLightStationColor(self, id, colorData):
+    def setColor(self, id, colorData):
+        if not self.stationAware:
+            print("This instance is not station aware.")
+            return False
         ip = None
         for station in self.stations:
             if station["id"] == id:
@@ -45,7 +47,7 @@ class controller:
         self.manager.sendColorCommand(ip, 2, colorData["g"])
         self.manager.sendColorCommand(ip, 3, colorData["b"])
 
-    def setAllLightStationColor(self, colorData):
+    def setColorGlobal(self, colorData):
         self.manager.sendColorCommand(self.ip, 1, colorData["r"])
         self.manager.sendColorCommand(self.ip, 2, colorData["g"])
         self.manager.sendColorCommand(self.ip, 3, colorData["b"])
