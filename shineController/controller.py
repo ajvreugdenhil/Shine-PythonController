@@ -25,8 +25,8 @@ class controller:
         for stationId in orderedStationIds:
             if not any(device["id"] == stationId for device in devices):
                 print("device not found: " + stationId)
-                self.validateStations(orderedStationIds)
                 time.sleep(1)
+                self.validateStations(orderedStationIds)
             else:
                 for device in devices:
                     if device["id"] == stationId:
@@ -41,7 +41,7 @@ class controller:
             if station["id"] == id:
                 ip = station["ip"]
         if ip == None:
-            print("Big oof")
+            print("Error! this station does not have an IP associated to it")
             return
         self.manager.sendColorCommand(ip, 1, colorData["r"])
         self.manager.sendColorCommand(ip, 2, colorData["g"])
@@ -56,5 +56,5 @@ class controller:
 def getStations(ip, port):
     manager = devicemanager.deviceManager(ip, port)
     manager.refreshDeviceList()
-    time.sleep(6)
+    time.sleep(2)
     return manager.getDevices()
