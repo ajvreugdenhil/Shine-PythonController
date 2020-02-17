@@ -12,7 +12,8 @@ def color(i):
     return {"r": i, "g": i, "b": i}
 
 class Station:
-    def __init__(self, id, colorstates):
+    def __init__(self, id, colorstates, repeat):
+        self.repeat = repeat
         self.id = id
         self.colorstates = colorstates # has "step"; "r" "g" and "b"
 
@@ -33,11 +34,13 @@ class Station:
             next = self.colorstates[i]
         except:
             previous = self.colorstates[-1]
-            next = None
+            next = self.colorstates[0]
 
         return [previous, next]
 
     def getState(self, steps):
+        if self.repeat:
+            steps = steps % self.colorstates[-1]["step"]
         result = color(0)
         for channel in colorChannels:
             previous, next = self.getRelevantStates(steps)
@@ -47,7 +50,7 @@ class Station:
             stepDifference = next["step"] - previous["step"]
             stepsBetweenPreviousAndNext = steps - previous["step"]
             if stepsBetweenPreviousAndNext < 0:
-                stepsBetweenPreviousAndNext = 0
+                stepsBetweenPreviousAndNext = -2 * stepsBetweenPreviousAndNext
             result[channel] = (int)((previous[channel] + ((next[channel] - previous[channel]) / stepDifference) * (stepsBetweenPreviousAndNext)) % 255)
         return result
 
@@ -94,7 +97,8 @@ programStations = program["stations"]
 stationIDs = []
 for station in programStations:
     if station["id"] not in stationIDs:
-        stationIDs.append(station["id"])
+        if station["id"] is not "*":
+            stationIDs.append(station["id"])
 print(stationIDs)
 
 # Initial setup
@@ -112,7 +116,10 @@ stations = []
 def Tick(currentStep):
     global c
     for station in stations:
-        c.setColor(station.id, station.getState(currentStep))
+        if station.id == "*":
+            c.setColorGlobal(station.getState(currentStep))
+        else:
+            c.setColor(station.id, station.getState(currentStep))
         #print(station.getState(currentStep))
 
 def main():
@@ -120,13 +127,13 @@ def main():
         id = station["id"]
         colorstates = []
         for event in station["timetable"]:
-            # One step every millisecond in this case:
-            step = event["time"] * 1000 
+            # One step every 2 ms, one tick every ms i think
+            step = event["time"] * 100 
             r = event["r"]
             g = event["g"]
             b = event["b"]
             colorstates.append({"step": step, "r":r, "g":g, "b":b})
-        stations.append(Station(id, colorstates))
+        stations.append(Station(id, colorstates, True))
 
     print(stations)
 
@@ -135,33 +142,11 @@ def main():
     while True:
         # Measure time
         Tick(currentStep)
-        currentStep += 10
-        time.sleep(0.01)
+        currentStep += 2
+        time.sleep(0.02)
         # Measure time
         # if the time is too long, error out
 
 if __name__ == '__main__':
     main()
     del c
-
-
-
-'''
-print("Starting!")
-    colors = [{"r": 0, "g": 0, "b": 0}, {"r": 254, "g": 0, "b": 0}, {"r": 0, "g": 254, "b": 0}, {"r": 0, "g": 0, "b": 254}]
-    currentcolor = color(0)
-    steps = 16
-    print(time.time())
-    time.sleep(1)
-    print(time.time())
-
-    while True:
-        for stationID in stations:
-            for i in range(0, len(colors)):
-                for step in range(0, steps + 1):
-                    for channel in colorChannels:
-                        currentcolor[channel] = (int)(colors[i][channel] + ((colors[((i + 1) % len(colors))][channel] - colors[i][channel]) / steps) * step)
-
-                    c.setColor(stationID, currentcolor)
-                    time.sleep(0.004)
-'''
