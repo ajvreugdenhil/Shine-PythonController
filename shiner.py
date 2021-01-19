@@ -7,6 +7,8 @@ import json
 
 c = None
 
+colorChannels = ["r", "g", "b"]
+
 def sigint_handler(sig, frame):
     global c
     if c is not None:
@@ -15,60 +17,6 @@ def sigint_handler(sig, frame):
     sys.exit(0)
 
 signal.signal(signal.SIGINT, sigint_handler)
-
-colorChannels = ["r", "g", "b"]
-
-'''
-class Station:
-    def __init__(self, id, colorstates, repeat):
-        self.repeat = repeat
-        self.id = id
-        self.colorstates = colorstates # has "step"; "r" "g" and "b"
-
-    def getRelevantStates(self, steps):
-        i = 0
-        # FIXME
-        try:
-            while ((self.colorstates[i]["step"] < steps)):
-                i += 1
-        except:
-            pass
-
-        previous = {}
-        next = {}
-        # FIXME
-        try:
-            previous = self.colorstates[i - 1]
-            next = self.colorstates[i]
-        except:
-            previous = self.colorstates[-1]
-            next = self.colorstates[0]
-
-        return [previous, next]
-
-    def getState(self, steps):
-        if self.repeat:
-            steps = steps % self.colorstates[-1]["step"]
-        result = color(0)
-        for channel in colorChannels:
-            previous, next = self.getRelevantStates(steps)
-            if next is None:
-                result[channel] = previous[channel]
-                continue
-            stepDifference = next["step"] - previous["step"]
-            stepsBetweenPreviousAndNext = steps - previous["step"]
-            if stepsBetweenPreviousAndNext < 0:
-                stepsBetweenPreviousAndNext = -2 * stepsBetweenPreviousAndNext
-            result[channel] = (int)((previous[channel] + ((next[channel] - previous[channel]) / stepDifference) * (stepsBetweenPreviousAndNext)) % 255)
-        return result
-
-    def __repr__(self):
-        return "ID: " + self.id + " number of states: " + str(len(self.colorstates))
-'''
-
-
-def getTime(object):
-    return object["event"]["time"]
 
 def main():
     if len(sys.argv) > 1:
