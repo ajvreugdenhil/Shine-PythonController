@@ -1,12 +1,12 @@
 import argparse
-import time
-from fftsource.stream_analyzer import Stream_Analyzer
 from shineController import controller
 import time
 import datetime
 import signal
 import sys
 import json
+import time
+from fftsource.stream_analyzer import Stream_Analyzer
 
 c = None
 
@@ -40,12 +40,9 @@ def main():
                     rate   = None,               # Audio samplerate, None uses the default source settings
                     FFT_window_size_ms  = 30,    # Window size used for the FFT transform. was 60
                     updates_per_second  = 1000,  # How often to read the audio stream for new data
-                    smoothing_length_ms = 1,    # Apply some temporal smoothing to reduce noisy features. was 50
+                    smoothing_length_ms = 50,    # Apply some temporal smoothing to reduce noisy features. was 50
                     n_frequency_bins = args.frequency_bins, # The FFT features are grouped in bins
-                    visualize = False,           # Visualize the FFT features with PyGame
                     verbose   = args.verbose,    # Print running statistics (latency, fps, ...)
-                    height    = 0,     # Height, in pixels, of the visualizer window,
-                    window_ratio = 0  # Float ratio of the visualizer window. e.g. 24/9
                     )
 
     settings = {}
@@ -75,13 +72,14 @@ def main():
     c = controller.controller(broacastip, port)
     c.setColorGlobal({"r": 0, "g": 0, "b": 0})
 
-    fps = 60  #How often to update the FFT features + display
+    fps = 10  #How often to update the FFT features + display
     last_update = time.time()
     while True:
         if (time.time() - last_update) > (1./fps):
             last_update = time.time()
             raw_fftx, raw_fft, binned_fftx, binned_fft = ear.get_audio_features()
-            volume = int(binned_fft[50]*10)
+            volume = int(binned_fft[4])
+            print(raw_fft[4], binned_fft[4])
             if volume > 255:
                 volume = 255
             c.setColorGlobal({"r": volume, "g": volume, "b": volume})

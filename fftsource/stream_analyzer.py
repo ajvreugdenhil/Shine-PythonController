@@ -3,7 +3,7 @@ import time
 import math
 import scipy
 from collections import deque
-#from scipy.signal import savgol_filter
+from fftsource.stream_reader_sounddevice import Stream_Reader
 
 from fftsource.fft import getFFT
 from fftsource.utils import *
@@ -26,28 +26,12 @@ class Stream_Analyzer:
         updates_per_second  = 100,
         smoothing_length_ms = 50,
         n_frequency_bins    = 51,
-        visualize = True,
-        verbose   = False,
-        height    = 450,
-        window_ratio = 24/9):
+        verbose   = False):
 
         self.n_frequency_bins = n_frequency_bins
         self.rate = rate
         self.verbose = verbose
-        self.visualize = visualize
-        self.height = height
-        self.window_ratio = window_ratio
-        '''
-        try:
-            from fftsource.stream_reader_pyaudio import Stream_Reader
-            self.stream_reader = Stream_Reader(
-                device  = device,
-                rate    = rate,
-                updates_per_second  = updates_per_second,
-                verbose = verbose)
-        except:
-        '''
-        from fftsource.stream_reader_sounddevice import Stream_Reader
+
         self.stream_reader = Stream_Reader(
             device  = device,
             rate    = rate,
@@ -59,12 +43,6 @@ class Stream_Analyzer:
         #Custom settings:
         self.rolling_stats_window_s    = 20     # The axis range of the FFT features will adapt dynamically using a window of N seconds
         self.equalizer_strength        = 0.20   # [0-1] --> gradually rescales all FFT features to have the same mean
-        self.apply_frequency_smoothing = True   # Apply a postprocessing smoothing filter over the FFT outputs
-
-        if self.apply_frequency_smoothing:
-            self.filter_width = round_up_to_even(0.03*self.n_frequency_bins) - 1
-        if self.visualize:
-            from fftsource.visualizer import Spectrum_Visualizer
 
         self.FFT_window_size = round_up_to_even(self.rate * FFT_window_size_ms / 1000)
         self.FFT_window_size_ms = 1000 * self.FFT_window_size / self.rate
@@ -115,10 +93,6 @@ class Stream_Analyzer:
         #Let's get started:
         self.stream_reader.stream_start(self.data_windows_to_buffer)
 
-        if self.visualize:
-            self.visualizer = Spectrum_Visualizer(self)
-            self.visualizer.start()
-
     def update_rolling_stats(self):
         self.rolling_bin_values.append_data(self.frequency_bin_energies)
         self.bin_mean_values  = np.mean(self.rolling_bin_values.get_buffer_data(), axis=0)
@@ -143,14 +117,8 @@ class Stream_Analyzer:
 
         self.strongest_frequency = self.fftx[np.argmax(self.fft)]
 
-        #ToDo: replace this for-loop with pure numpy code
         for bin_index in range(self.n_frequency_bins):
             self.frequency_bin_energies[bin_index] = np.mean(self.fft[self.fftx_indices_per_bin[bin_index]])
-
-        #Beat detection ToDo:
-        #https://www.parallelcube.com/2018/03/30/beat-detection-algorithm/
-        #https://github.com/shunfu/python-beat-detector
-        #https://pypi.org/project/vamp/
 
         return
 
@@ -165,11 +133,6 @@ class Stream_Analyzer:
             self.stream_reader.new_data = False
 
             self.frequency_bin_energies = np.nan_to_num(self.frequency_bin_energies, copy=True)
-            if self.apply_frequency_smoothing:
-                if self.filter_width > 3:
-                    #FIXME
-                    pass
-                    #self.frequency_bin_energies = savgol_filter(self.frequency_bin_energies, self.filter_width, 3)
             self.frequency_bin_energies[self.frequency_bin_energies < 0] = 0
 
             if self.verbose:
@@ -180,8 +143,5 @@ class Stream_Analyzer:
                 print("\nAvg fft  delay: %.2fms  -- avg data delay: %.2fms" %(avg_fft_delay, avg_data_capture_delay))
                 print("Num data captures: %d (%.2ffps)-- num fft computations: %d (%.2ffps)"
                     %(self.stream_reader.num_data_captures, data_fps, self.num_ffts, self.fft_fps))
-
-            if self.visualize and self.visualizer._is_running:
-                self.visualizer.update()
 
         return self.fftx, self.fft, self.frequency_bin_centres, self.frequency_bin_energies
