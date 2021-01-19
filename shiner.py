@@ -4,13 +4,21 @@ import datetime
 import signal
 import sys
 import json
-#allStations = ["B745C3", "A588E8", "308176", "30847E"]
 
+c = None
+
+def sigint_handler(sig, frame):
+    global c
+    if c is not None:
+        c.setColorGlobal({"r": 0, "g": 0, "b": 0})
+        del c
+    sys.exit(0)
+
+signal.signal(signal.SIGINT, sigint_handler)
 
 colorChannels = ["r", "g", "b"]
-def color(i):
-    return {"r": i, "g": i, "b": i}
 
+'''
 class Station:
     def __init__(self, id, colorstates, repeat):
         self.repeat = repeat
@@ -56,100 +64,48 @@ class Station:
 
     def __repr__(self):
         return "ID: " + self.id + " number of states: " + str(len(self.colorstates))
-
-
-
-# Set up sigint behavior
-def signal_handler(sig, frame):
-    global c
-    c.setColorGlobal({"r": 0, "g": 0, "b": 0})
-    del c
-    sys.exit(0)
+'''
 
 
 def getTime(object):
     return object["event"]["time"]
 
-
-
-# START OF FLOW
-signal.signal(signal.SIGINT, signal_handler)
-
-# Get the program
-if len(sys.argv) > 1:
-    shineProgramFile = sys.argv[1]
-else:
-    print("No arguments. Using default values")
-    shineProgramFile = "./program.json"
-
-program = {}
-try:
-    programfile = open(shineProgramFile, "r")
-    program = json.load(programfile)
-except:
-    print("Problem with reading the file")
-    sys.exit(1)
-
-# TODO: check program contents?
-broacastip = program["broadcastip"]
-port = program["port"]
-programStations = program["stations"]
-
-# Get all the station ids in the program
-stationIDs = []
-for station in programStations:
-    if station["id"] not in stationIDs:
-        if station["id"] is not "*":
-            stationIDs.append(station["id"])
-
-
-# Initial setup
-foundStationIds = []
-for station in controller.getStations(broacastip, port):
-    foundStationIds.append(station["id"])
-    if station["id"] not in stationIDs:
-        print("Rogue station will not be used: " + station["id"])
-
-
-c = controller.controller(broacastip, port, stationIDs)
-c.setColorGlobal({"r": 0, "g": 0, "b": 0})
-
-stations = []
-
-def Tick(currentStep):
-    global c
-    for station in stations:
-        if station.id == "*":
-            c.setColorGlobal(station.getState(currentStep))
-        else:
-            c.setColor(station.id, station.getState(currentStep))
-        #print(station.getState(currentStep))
-
 def main():
-    for station in programStations:
-        id = station["id"]
-        colorstates = []
-        for event in station["timetable"]:
-            # One step every 2 ms, one tick every ms i think
-            step = event["time"] * 100 
-            r = event["r"]
-            g = event["g"]
-            b = event["b"]
-            colorstates.append({"step": step, "r":r, "g":g, "b":b})
-        stations.append(Station(id, colorstates, True))
+    if len(sys.argv) > 1:
+        settings_file = sys.argv[1]
+    else:
+        print("No arguments. Using default settings file")
+        settings_file = "./settings.json"
+    settings = {}
+    try:
+        programfile = open(settings_file, "r")
+        settings = json.load(programfile)
+    except:
+        print("Problem with reading the file")
+        sys.exit(1)
+    try:
+        broacastip = settings["broadcastip"]
+        port = settings["port"]
+        stationIDs = settings["stations"]
+    except:
+        print("Settings file invalid!")
+        sys.exit(1)
 
-    print(stations)
+    # Initial setup
+    foundStationIds = []
+    for station in controller.getStations(broacastip, port):
+        foundStationIds.append(station["id"])
+        if station["id"] not in stationIDs:
+            print("Rogue station will not be used: " + station["id"])
 
-    currentStep = 0
+    global c
+    #c = controller.controller(broacastip, port, stationIDs)
+    c = controller.controller(broacastip, port)
+    c.setColorGlobal({"r": 0, "g": 0, "b": 0})
 
     while True:
-        # Measure time
-        Tick(currentStep)
-        currentStep += 2
-        time.sleep(0.02)
-        # Measure time
-        # if the time is too long, error out
+        c.setColorGlobal({"r": 10, "g": 99, "b": 50})
+        time.sleep(2)
 
 if __name__ == '__main__':
     main()
-    del c

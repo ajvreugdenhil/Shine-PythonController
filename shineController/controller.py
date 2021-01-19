@@ -2,7 +2,7 @@ import time
 from shineController import devicemanager
 
 class controller:
-    def __init__(self, ip, port, stations):
+    def __init__(self, ip, port, stations=None):
         self.ip = ip
         self.port = port
         self.manager = devicemanager.deviceManager(ip, port)
