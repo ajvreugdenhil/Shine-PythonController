@@ -7,17 +7,8 @@ import shutil
 import numpy as np
 import sounddevice as sd
 
-usage_line = ' press <enter> to quit, +<enter> or -<enter> to change scaling '
 
-
-def int_or_str(text):
-    """Helper function for argument parsing."""
-    try:
-        return int(text)
-    except ValueError:
-        return text
-
-
+'''
 try:
     columns, _ = shutil.get_terminal_size()
 except AttributeError:
@@ -45,7 +36,7 @@ parser.add_argument(
     '-d', '--device', type=int_or_str,
     help='input device (numeric ID or substring)')
 parser.add_argument(
-    '-g', '--gain', type=float, default=10,
+    '-g', '--gain', type=float, default=100,
     help='initial gain factor (default %(default)s)')
 parser.add_argument(
     '-r', '--range', type=float, nargs=2,
@@ -55,57 +46,32 @@ args = parser.parse_args(remaining)
 low, high = args.range
 if high <= low:
     parser.error('HIGH must be greater than LOW')
+'''
 
-# Create a nice output gradient using ANSI escape sequences.
-# Stolen from https://gist.github.com/maurisvh/df919538bcef391bc89f
-colors = 30, 34, 35, 91, 93, 97
-chars = ' :%#\t#%:'
-gradient = []
-for bg, fg in zip(colors, colors[1:]):
-    for char in chars:
-        if char == '\t':
-            bg, fg = fg, bg
-        else:
-            gradient.append('\x1b[{};{}m{}'.format(fg, bg + 10, char))
+block_duration = 50
+block_duration = 500
+device = 8
+gain = 3200
+low = 100
+high = 2000
+columns = 80
 
-try:
-    samplerate = sd.query_devices(args.device, 'input')['default_samplerate']
+device_dict = sd.query_devices()
+print(device_dict)
 
-    delta_f = (high - low) / (args.columns - 1)
-    fftsize = math.ceil(samplerate / delta_f)
-    low_bin = math.floor(low / delta_f)
+samplerate = sd.query_devices(device, 'input')['default_samplerate']
+print(samplerate)
+delta_f = (high - low) / (columns - 1)
+fftsize = math.ceil(samplerate / delta_f)
+low_bin = math.floor(low / delta_f)
 
-    def callback(indata, frames, time, status):
-        if status:
-            text = ' ' + str(status) + ' '
-            print('\x1b[34;40m', text.center(args.columns, '#'),
-                  '\x1b[0m', sep='')
-        if any(indata):
-            magnitude = np.abs(np.fft.rfft(indata[:, 0], n=fftsize))
-            magnitude *= args.gain / fftsize
-            line = (gradient[int(np.clip(x, 0, 1) * (len(gradient) - 1))]
-                    for x in magnitude[low_bin:low_bin + args.columns])
-            print(*line, sep='', end='\x1b[0m\n')
-        else:
-            print('no input')
+def callback(indata, frames, time, status):
+    magnitude = np.abs(np.fft.rfft(indata[:, 0], n=fftsize))
+    magnitude *= gain / fftsize
+    print((magnitude[4]))
 
-    with sd.InputStream(device=args.device, channels=1, callback=callback,
-                        blocksize=int(samplerate * args.block_duration / 1000),
-                        samplerate=samplerate):
-        while True:
-            response = input()
-            if response in ('', 'q', 'Q'):
-                break
-            for ch in response:
-                if ch == '+':
-                    args.gain *= 2
-                elif ch == '-':
-                    args.gain /= 2
-                else:
-                    print('\x1b[31;40m', usage_line.center(args.columns, '#'),
-                          '\x1b[0m', sep='')
-                    break
-except KeyboardInterrupt:
-    parser.exit('Interrupted by user')
-except Exception as e:
-    parser.exit(type(e).__name__ + ': ' + str(e))
+with sd.InputStream(device=device, channels=1, callback=callback,
+                    blocksize=int(samplerate * block_duration / 1000),
+                    samplerate=samplerate):
+    while True:
+        pass
