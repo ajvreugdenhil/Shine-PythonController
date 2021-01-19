@@ -71,6 +71,8 @@ def getTime(object):
     return object["event"]["time"]
 
 
+
+# START OF FLOW
 signal.signal(signal.SIGINT, signal_handler)
 
 # Get the program
@@ -99,7 +101,7 @@ for station in programStations:
     if station["id"] not in stationIDs:
         if station["id"] is not "*":
             stationIDs.append(station["id"])
-print(stationIDs)
+
 
 # Initial setup
 foundStationIds = []
@@ -107,6 +109,7 @@ for station in controller.getStations(broacastip, port):
     foundStationIds.append(station["id"])
     if station["id"] not in stationIDs:
         print("Rogue station will not be used: " + station["id"])
+
 
 c = controller.controller(broacastip, port, stationIDs)
 c.setColorGlobal({"r": 0, "g": 0, "b": 0})

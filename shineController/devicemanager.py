@@ -61,7 +61,11 @@ class registrationReceiverThread (threading.Thread):
 
     def exit(self):
         self.running = False
-        self.serverSocket.shutdown(SHUT_RDWR)
+        # TODO: fix this try except mess
+        try:
+            self.serverSocket.shutdown(SHUT_RDWR)
+        except:
+            pass
         self.serverSocket.close()
 
 
@@ -72,6 +76,8 @@ def receiveData(socket, q, queueLock):
         message, address = socket.recvfrom(1024)
     except:
         print("whoopsie fuckedydoo")
+        return
+    if (len(message) <= 0):
         return
     if (message[0] != 0b01000000):
         return
