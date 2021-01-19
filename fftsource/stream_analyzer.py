@@ -37,7 +37,7 @@ class Stream_Analyzer:
         self.visualize = visualize
         self.height = height
         self.window_ratio = window_ratio
-
+        '''
         try:
             from fftsource.stream_reader_pyaudio import Stream_Reader
             self.stream_reader = Stream_Reader(
@@ -46,12 +46,13 @@ class Stream_Analyzer:
                 updates_per_second  = updates_per_second,
                 verbose = verbose)
         except:
-            from fftsource.stream_reader_sounddevice import Stream_Reader
-            self.stream_reader = Stream_Reader(
-                device  = device,
-                rate    = rate,
-                updates_per_second  = updates_per_second,
-                verbose = verbose)
+        '''
+        from fftsource.stream_reader_sounddevice import Stream_Reader
+        self.stream_reader = Stream_Reader(
+            device  = device,
+            rate    = rate,
+            updates_per_second  = updates_per_second,
+            verbose = verbose)
 
         self.rate = self.stream_reader.rate
 
