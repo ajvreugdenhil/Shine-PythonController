@@ -75,7 +75,7 @@ def receiveData(socket, q, queueLock):
     try:
         message, address = socket.recvfrom(1024)
     except:
-        print("whoopsie fuckedydoo")
+        print("An error occurred while receiving data")
         return
     if (len(message) <= 0):
         return

@@ -16,17 +16,25 @@ import sounddevice as sd
 c = None
 colorChannels = ["r", "g", "b"]
 
+
+device = 1
+
 block_duration = 50
 block_duration = 10
-device = 8
 gain = 3200
 low = 100
 high = 2000
 columns = 80
+channel_amount = 1
+test_freq = 4
+
+
 device_dict = sd.query_devices()
-print(device_dict)
 samplerate = sd.query_devices(device, 'input')['default_samplerate']
-print(samplerate)
+print(device_dict)
+print("#########")
+print(sd.query_devices(device, 'input'))
+print("#########")
 delta_f = (high - low) / (columns - 1)
 fftsize = math.ceil(samplerate / delta_f)
 low_bin = math.floor(low / delta_f)
