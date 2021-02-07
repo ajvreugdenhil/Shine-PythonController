@@ -1,5 +1,5 @@
 {
-    "broadcastip": "192.168.2.255",
+    "broadcastip": "192.168.137.255",
     "port": 5000,
     "stations": 
     [
