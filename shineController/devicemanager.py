@@ -3,6 +3,7 @@ import threading
 import time
 from socket import *
 
+import os
 
 class deviceManager:
     def __init__(self, ip, port):
@@ -10,13 +11,20 @@ class deviceManager:
         self.port = port
         self.queueLock = threading.Lock()
         self.deviceQueue = queue.Queue(0)
-        self.thread = registrationReceiverThread(self.deviceQueue, port, self.queueLock)
-        self.thread.start()
+        #self.thread = registrationReceiverThread(self.deviceQueue, port, self.queueLock)
+        #self.thread.start()
         self.devices = []
         self.sock = socket(AF_INET, SOCK_DGRAM)
+        #self.othersock = socket(AF_INET, SOCK_DGRAM)
+        #self.sock.settimeout(0.0000005)
+        ##self.sock.bind(('192.168.137.1', 5000))
+        #self.sock.setsockopt(SOL_SOCKET, SO_SNDBUF, 0)
+        self.sock.connect((ip, port))
+        
 
     def __del__(self):
-        self.thread.exit()
+        pass
+        #self.thread.exit()
 
     def refreshDeviceList(self):
         self.requestRegistration()
@@ -37,12 +45,16 @@ class deviceManager:
         commandByte = 0b01100000.to_bytes(1, "little")
         self.sock.sendto(commandByte, (self.ip, self.port))
         
-    def sendColorCommand(self, ip, color, brighness):
+    def sendColorCommand(self, ip, color, brightness):
         commandByte = 0b00100000.to_bytes(1, "little")
         colorByte = color.to_bytes(1, "little")
-        brightnessbyte = brighness.to_bytes(1, "little")
+        brightnessbyte = brightness.to_bytes(1, "little")
         message = commandByte + colorByte + brightnessbyte
-        self.sock.sendto(message, (ip, self.port))
+        start = time.time()
+        #self.othersock.sendto(message, ("192.168.137.104", self.port))
+        self.sock.sendall(message)
+        #socket(AF_INET, SOCK_DGRAM).sendto(message, MSG_DONTWAIT, (ip, self.port))
+        print((time.time()-start))
 
 
 class registrationReceiverThread (threading.Thread):

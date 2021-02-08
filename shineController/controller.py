@@ -1,5 +1,6 @@
 import time
 from shineController import devicemanager
+import threading
 
 class controller:
     def __init__(self, ip, port, stations=None):
@@ -53,8 +54,8 @@ class controller:
         self.manager.sendColorCommand(self.ip, 3, colorData["b"])
 
 
-def getStations(ip, port):
-    manager = devicemanager.deviceManager(ip, port)
-    manager.refreshDeviceList()
-    time.sleep(2)
-    return manager.getDevices()
+    def getStations(self, ip, port):
+        manager = devicemanager.deviceManager(ip, port)
+        manager.refreshDeviceList()
+        time.sleep(2)
+        return manager.getDevices()
