@@ -54,7 +54,7 @@ class deviceManager:
         #self.othersock.sendto(message, ("192.168.137.104", self.port))
         self.sock.sendall(message)
         #socket(AF_INET, SOCK_DGRAM).sendto(message, MSG_DONTWAIT, (ip, self.port))
-        print((time.time()-start))
+        print((time.time()-start)*1000)
 
 
 class registrationReceiverThread (threading.Thread):

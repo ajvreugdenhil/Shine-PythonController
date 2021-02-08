@@ -45,10 +45,10 @@ def main():
     #c = controller.controller(broadcastip, port, stationIDs)
     #c = controller.controller(broadcastip, port)
     #c.setColorGlobal({"r": 0, "g": 0, "b": 50})
-    m = devicemanager.deviceManager("ESP_B745C3.wlan", port)
-
+    m = devicemanager.deviceManager("10.42.0.237", port)
+    # ESP_B745C3.wlan
     pingpongval = 0
-    cycletime = 150 #ms
+    cycletime = 40 #ms
     previoustime = time.time()*1000 #in ms
     while True:
         now = time.time()*1000
@@ -60,7 +60,7 @@ def main():
                 pingpongval = 0
             
             #c.setColorGlobal({"r": 0, "g":0, "b":pingpongval})
-            m.sendColorCommand("ESP_B745C3.wlan", 3, pingpongval)
+            m.sendColorCommand("10.42.0.237", 3, pingpongval)
             
             #print(pingpongval)
 
