@@ -3,10 +3,9 @@ import threading
 import time
 from socket import *
 
-
 class deviceManager:
-    def __init__(self, ip, port):
-        self.ip = ip
+    def __init__(self, broadcast_ip, port):
+        self.broadcast_ip = broadcast_ip
         self.port = port
         self.queueLock = threading.Lock()
         self.deviceQueue = queue.Queue(0)
@@ -14,8 +13,9 @@ class deviceManager:
         self.thread.start()
         self.devices = []
         self.sock = socket(AF_INET, SOCK_DGRAM)
+        self.sock.setsockopt(SOL_SOCKET, SO_BROADCAST, 1)
 
-    def __del__(self):
+    def exit(self):
         self.thread.exit()
 
     def refreshDeviceList(self):
@@ -32,17 +32,36 @@ class deviceManager:
         self.updateDeviceList()
         return self.devices
     
-    
     def requestRegistration(self):
         commandByte = 0b01100000.to_bytes(1, "little")
-        self.sock.sendto(commandByte, (self.ip, self.port))
+        self.sock.sendto(commandByte, (self.broadcast_ip, self.port))
         
-    def sendColorCommand(self, ip, color, brighness):
+    def sendRawColorCommand(self, ip, color, brighness):
         commandByte = 0b00100000.to_bytes(1, "little")
+        # r=1 g=2 b=3
         colorByte = color.to_bytes(1, "little")
         brightnessbyte = brighness.to_bytes(1, "little")
         message = commandByte + colorByte + brightnessbyte
         self.sock.sendto(message, (ip, self.port))
+
+    def sendColorGlobal(self, colorObject):
+        self.sendRawColorCommand(self.broadcast_ip, 1, colorObject["r"])
+        self.sendRawColorCommand(self.broadcast_ip, 2, colorObject["g"])
+        self.sendRawColorCommand(self.broadcast_ip, 3, colorObject["b"])
+
+    def sendColorSpecific(self, colorObject, id):
+        ip = None
+        for device in self.devices:
+            if device['id'].lower() == id.lower():
+                ip = device['ip']
+                break
+        if ip == None:
+            print("ERROR: no such ID: " + id)
+            return
+        
+        self.sendRawColorCommand(ip, 1, colorObject["r"])
+        self.sendRawColorCommand(ip, 2, colorObject["g"])
+        self.sendRawColorCommand(ip, 3, colorObject["b"])
 
 
 class registrationReceiverThread (threading.Thread):
@@ -57,7 +76,23 @@ class registrationReceiverThread (threading.Thread):
     def run(self):
         self.running = True
         while (self.running):
-            receiveData(self.serverSocket, self.q, self.queueLock)
+            message = None
+            address = None
+            try:
+                message, address = self.serverSocket.recvfrom(1024)
+            except:
+                print("An unexpected error occurred while receiving data")
+                continue
+            if (len(message) <= 0):
+                continue
+            if (message[0] != 0b01000000):
+                continue
+            device_ip = address[0]
+            device_id = message[1:7].decode("utf-8") 
+            device = {"ip": device_ip, "id": device_id.lower()}
+            self.queueLock.acquire()
+            self.q.put(device)
+            self.queueLock.release()
 
     def exit(self):
         self.running = False
@@ -68,23 +103,3 @@ class registrationReceiverThread (threading.Thread):
             pass
         self.serverSocket.close()
 
-
-def receiveData(socket, q, queueLock):
-    message = None
-    address = None
-    try:
-        message, address = socket.recvfrom(1024)
-    except:
-        print("An error occurred while receiving data")
-        return
-    if (len(message) <= 0):
-        return
-    if (message[0] != 0b01000000):
-        return
-    device_ip = address[0]
-    device_id = message[1:7].decode("utf-8") 
-    device = {"ip": device_ip, "id": device_id}
-    queueLock.acquire()
-    q.put(device)
-    queueLock.release()
-    

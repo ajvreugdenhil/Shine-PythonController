@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-from shineController import controller
+from shineController import devicemanager
 import time
 import datetime
 import signal
-import sys
 import json
 import time
 
@@ -13,13 +12,13 @@ import shutil
 import numpy as np
 import sounddevice as sd
 
-c = None
+dm = None
 colorChannels = ["r", "g", "b"]
 
-
+'''
 device = 1
 
-block_duration = 50
+block_duration = 1
 gain = 3200
 low = 100
 high = 2000
@@ -41,14 +40,14 @@ low_bin = math.floor(low / delta_f)
 block_duration = 1
 blocksize = samplerate * block_duration / 1000
 blocksize = 1000
-
+'''
 
 def sigint_handler(sig, frame):
-    global c
-    if c is not None:
-        c.setColorGlobal({"r": 0, "g": 0, "b": 0})
-        del c
-    sys.exit(0)
+    global dm
+    if dm is not None:
+        dm.sendColorGlobal({"r": 0, "g": 0, "b": 0})
+        dm.exit()
+    exit(0)
 
 signal.signal(signal.SIGINT, sigint_handler)
 
@@ -60,53 +59,38 @@ def main():
         settings = json.load(programfile)
     except:
         print("Problem with reading the file")
-        sys.exit(1)
+        exit(1)
     try:
         broadcastip = settings["broadcastip"]
         port = settings["port"]
         stationIDs = settings["stations"]
     except:
         print("Settings file invalid!")
-        sys.exit(1)
+        exit(1)
 
-    # Initial setup
-    foundStationIds = []
-    for station in controller.getStations(broadcastip, port):
-        foundStationIds.append(station["id"])
-        if station["id"] not in stationIDs:
-            print("Rogue station will not be used: " + station["id"])
 
-    global c
-    #c = controller.controller(broadcastip, port, stationIDs)
-    c = controller.controller(broadcastip, port)
-    c.setColorGlobal({"r": 0, "g": 0, "b": 50})
+    global dm
+    dm = devicemanager.deviceManager(broadcastip, port)
+    dm.refreshDeviceList()
+    time.sleep(1)
+    print(dm.getDevices())
 
-    pingpongval = 0
-    cycletime = 500 #ms
-    previoustime = time.time()*1000 #in ms
     while True:
-        now = time.time()*1000
-        if (now - cycletime > previoustime):
-            previoustime = now
+        for i in range(0,3):
+            dm.sendColorSpecific({"r": (i==0)*255, "g": (i==1)*255, "b": (i==2)*255}, '30847e')
+            time.sleep(0.1)
 
-            pingpongval+= 1
-            if pingpongval > 255:
-                pingpongval = 0
-            c.setColorGlobal({"r": 0, "g":0, "b":pingpongval})
-            #print(pingpongval)
-    
-    #Debug stop
-
-    with sd.InputStream(device=device, channels=1, callback=callback,
+    '''
+    with sd.InputStream(device=device, channels=1, callback=audio_callback,
                         blocksize=int(blocksize),
                         samplerate=samplerate):
         while True:
             pass
-
-def callback(indata, frames, time, status):
+    '''
+def audio_callback(indata, frames, time, status):
         magnitude = np.abs(np.fft.rfft(indata[:, 0], n=fftsize))
         magnitude *= gain / fftsize
-        volume = int(magnitude[4])*10
+        volume = int(int(magnitude[16]) * int(magnitude[16]) / 2)
         #print(volume)
         if volume > 255:
             volume = 255
