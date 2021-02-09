@@ -1,8 +1,7 @@
 {
     "broadcastip": "10.42.0.255",
     "port": 5000,
-    "stations": 
-    [
-        "30847E"
+    "stations": [
+        "30847e"
     ]
 }

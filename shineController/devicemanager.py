@@ -3,13 +3,15 @@ import threading
 import time
 from socket import *
 
+
 class deviceManager:
     def __init__(self, broadcast_ip, port):
         self.broadcast_ip = broadcast_ip
         self.port = port
         self.queueLock = threading.Lock()
         self.deviceQueue = queue.Queue(0)
-        self.thread = registrationReceiverThread(self.deviceQueue, port, self.queueLock)
+        self.thread = registrationReceiverThread(
+            self.deviceQueue, port, self.queueLock)
         self.thread.start()
         self.devices = []
         self.sock = socket(AF_INET, SOCK_DGRAM)
@@ -31,16 +33,16 @@ class deviceManager:
     def getDevices(self):
         self.updateDeviceList()
         return self.devices
-    
+
     def requestRegistration(self):
         commandByte = 0b01100000.to_bytes(1, "little")
         self.sock.sendto(commandByte, (self.broadcast_ip, self.port))
-        
-    def sendRawColorCommand(self, ip, color, brighness):
+
+    def sendRawColorCommand(self, ip, color, brightness):
         commandByte = 0b00100000.to_bytes(1, "little")
         # r=1 g=2 b=3
         colorByte = color.to_bytes(1, "little")
-        brightnessbyte = brighness.to_bytes(1, "little")
+        brightnessbyte = brightness.to_bytes(1, "little")
         message = commandByte + colorByte + brightnessbyte
         self.sock.sendto(message, (ip, self.port))
 
@@ -58,7 +60,7 @@ class deviceManager:
         if ip == None:
             print("ERROR: no such ID: " + id)
             return
-        
+
         self.sendRawColorCommand(ip, 1, colorObject["r"])
         self.sendRawColorCommand(ip, 2, colorObject["g"])
         self.sendRawColorCommand(ip, 3, colorObject["b"])
@@ -88,7 +90,7 @@ class registrationReceiverThread (threading.Thread):
             if (message[0] != 0b01000000):
                 continue
             device_ip = address[0]
-            device_id = message[1:7].decode("utf-8") 
+            device_id = message[1:7].decode("utf-8")
             device = {"ip": device_ip, "id": device_id.lower()}
             self.queueLock.acquire()
             self.q.put(device)
@@ -102,4 +104,3 @@ class registrationReceiverThread (threading.Thread):
         except:
             pass
         self.serverSocket.close()
-
