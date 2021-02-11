@@ -7,6 +7,7 @@ import datetime
 import json
 import time
 
+from shinePrograms import thunder
 from shinePrograms import shineambiance
 
 
@@ -34,7 +35,8 @@ def init():
 
 
 def main(dm):
-    shineambiance.main(dm, dm.getDevices()[0]['id'], 600)
+    thunder.main(dm)
+    #shineambiance.main(dm, 10)
 
 
 if __name__ == '__main__':
@@ -44,6 +46,9 @@ if __name__ == '__main__':
         main(dm)
     except KeyboardInterrupt:
         print("doei")
-        time.sleep(0.01)
+        time.sleep(1)
         dm.sendColorGlobal({'r': 0, 'g': 0, 'b': 0})
+        time.sleep(0.1)
+        dm.sendColorGlobal({'r': 0, 'g': 0, 'b': 0})
+        time.sleep(0.1)
         dm.exit()
