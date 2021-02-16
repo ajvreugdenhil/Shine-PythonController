@@ -29,14 +29,15 @@ def init():
 
     dm = devicemanager.deviceManager(broadcast_ip, port)
     dm.refreshDeviceList()
-    time.sleep(1)
+    time.sleep(3)
     print(dm.getDevices())
     return dm
 
 
 def main(dm):
-    thunder.main(dm)
-    #shineambiance.main(dm, 10)
+    # directControl.main(dm)
+    # thunder.main(dm)
+    shineambiance.main(dm, 100)
 
 
 if __name__ == '__main__':

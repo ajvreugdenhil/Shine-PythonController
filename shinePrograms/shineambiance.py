@@ -6,15 +6,32 @@ channels = ['r', 'g', 'b']
 
 def main(dm, refreshrate=100):
     waitTime = 1 / refreshrate
-    freq = 0.3
+    r = 0
+    g = 0
+    b = 254
+    state = 'r'
     while True:
-        for i in range(31):
-            for station in dm.getDevices():
-                dm.sendColorSpecific(
-                    {
-                        'r': int(math.sin(freq*i + 0) * 127 + 128),
-                        'g': int(math.sin(freq*i + math.tau/3) * 127 + 128),
-                        'b': int(math.sin(freq*i + 2*math.tau/3) * 127 + 128),
-                    },
-                    station['id'])
-                time.sleep(waitTime)
+        if state == 'r':
+            r += 1
+            b -= 1
+            if r > 254:
+                state = 'g'
+        elif state == 'g':
+            g += 1
+            r -= 1
+            if g > 254:
+                state = 'b'
+        elif state == 'b':
+            b += 1
+            g -= 1
+            if b > 254:
+                state = 'r'
+        for station in dm.getDevices():
+            dm.sendColorSpecific(
+                {
+                    'r': abs(r),
+                    'g': abs(g),
+                    'b': abs(b),
+                },
+                station['id'])
+        time.sleep(waitTime)
