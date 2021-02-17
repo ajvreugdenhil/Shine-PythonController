@@ -3,6 +3,11 @@ import threading
 import time
 from socket import *
 
+import logging
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 
 class deviceManager:
     def __init__(self, broadcast_ip, port):
@@ -58,7 +63,7 @@ class deviceManager:
                 ip = device['ip']
                 break
         if ip == None:
-            print("ERROR: no such ID: " + id)
+            logger.error("ERROR: no such ID: " + id)
             return
 
         self.sendRawColorCommand(ip, 1, colorObject["r"])
@@ -83,7 +88,7 @@ class registrationReceiverThread (threading.Thread):
             try:
                 message, address = self.serverSocket.recvfrom(1024)
             except:
-                print("An unexpected error occurred while receiving data")
+                logger.error("An unexpected error occurred while receiving data")
                 continue
             if (len(message) <= 0):
                 continue
