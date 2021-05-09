@@ -1,6 +1,8 @@
 import sys
 from queue import Queue
 from ctypes import POINTER, c_ubyte, c_void_p, c_ulong, cast
+from collections import deque
+import time
 
 # The majority of this code is from
 # https://menno.io/posts/pulseaudio_monitoring/
@@ -9,7 +11,11 @@ from pulseaudio.lib_pulseaudio import *
 
 SINK_NAME = bytes(
     'alsa_output.pci-0000_03_00.6.analog-stereo', encoding='utf-8')
+#SINK_NAME = bytes(
+#    'alsa_output.pci-0000_03_00.1.hdmi-stereo', encoding='utf-8')
 METER_RATE = 344
+METER_RATE = 172 # two
+METER_RATE = int(172/4) # test
 MAX_SAMPLE_VALUE = 127
 DISPLAY_SCALE = 0
 MAX_SPACES = MAX_SAMPLE_VALUE >> DISPLAY_SCALE
@@ -115,20 +121,37 @@ def dry_run():
         sys.stdout.flush()
 
 
-def main(dm):
+def main(dm, history_length=1000, send_timeout=8):
     monitor = PeakMonitor(SINK_NAME, METER_RATE)
+    previous_peaks = deque(maxlen=history_length)
     for sample in monitor:
         sample = sample - 128
-        sample *= 2
-        assert sample <= 256
+        #sample *= 2
+        #assert sample <= 256
+
+        previous_peaks.appendleft(sample)
+        brightness_min = 0
+        brightness_max = 255
+        brightness = 0
+        if (max(previous_peaks)-min(previous_peaks)) != 0:
+            brightness = (sample-min(previous_peaks))/(max(previous_peaks)-min(previous_peaks))*(brightness_max-brightness_min)+brightness_min
+        #brightness = sum(previous_peaks) / len(previous_peaks)
+        #print(brightness)
+        #print(max(previous_peaks))
+        send_start_time = time.time()*1000 # ms
         for station in dm.getDevices():
             dm.sendColorSpecific(
                 {
                     'r': (0),
                     'g': (0),
-                    'b': (sample),
+                    'b': (int(brightness)),
                 },
                 station['id'])
+            if ((time.time()*1000) - send_start_time) > send_timeout:
+                #print("send timeout!")
+                while not monitor._samples.empty():
+                    monitor._samples.get()
+                break
 
 
 if __name__ == '__main__':

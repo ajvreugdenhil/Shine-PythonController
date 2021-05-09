@@ -27,6 +27,7 @@ class deviceManager:
 
     def refreshDeviceList(self):
         self.requestRegistration()
+        self.devices.clear()
         self.updateDeviceList()
 
     def updateDeviceList(self):
@@ -49,7 +50,19 @@ class deviceManager:
         colorByte = color.to_bytes(1, "little")
         brightnessbyte = brightness.to_bytes(1, "little")
         message = commandByte + colorByte + brightnessbyte
+
+        send_timeout = 4 #ms
+        send_start_time = time.time()*1000 # ms
         self.sock.sendto(message, (ip, self.port))
+        if ((time.time()*1000) - send_start_time) > send_timeout:
+            logger.error(f"Send timeout for {str(ip)}. Removing it.")
+            try:
+                for i in range(len(self.devices)):
+                    if self.devices[i]["ip"] == ip:
+                        del self.devices[i]
+            except IndexError:
+                logger.error("Failed to remove device")
+            logger.info(f"New device list: {self.devices}")
 
     def sendColorGlobal(self, colorObject):
         self.sendRawColorCommand(self.broadcast_ip, 1, colorObject["r"])
@@ -97,6 +110,7 @@ class registrationReceiverThread (threading.Thread):
             device_ip = address[0]
             device_id = message[1:7].decode("utf-8")
             device = {"ip": device_ip, "id": device_id.lower()}
+            logger.info(f"New device: {device}")
             self.queueLock.acquire()
             self.q.put(device)
             self.queueLock.release()
