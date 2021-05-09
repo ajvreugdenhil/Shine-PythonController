@@ -2,7 +2,7 @@
 import signal
 import time
 import datetime
-import json
+import yaml
 from shineController import devicemanager
 from shinePrograms import shine_pulseaudio
 
@@ -13,21 +13,15 @@ logger = logging.getLogger(__name__)
 
 
 def init():
-    settings = {}
-    try:
-        programfile = open("./settings.json", "r")
-        settings = json.load(programfile)
-    except:
-        logger.error("Problem with reading the file")
-        exit(1)
-    try:
-        broadcast_ip = settings["broadcastip"]
-        port = settings["port"]
-        stations = settings["stations"]
-    except:
-        logger.error("Settings file invalid!")
-        exit(1)
-
+    with open(r'settings.yml') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            broadcast_ip = settings["broadcastip"]
+            port = settings["port"]
+            stations = settings["stations"]
+        except:
+            logger.error("Settings file invalid!")
+            exit(1)
     dm = devicemanager.deviceManager(broadcast_ip, port)
     dm.refreshDeviceList()
     time.sleep(3)
