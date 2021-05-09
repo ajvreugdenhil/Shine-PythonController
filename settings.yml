@@ -2,7 +2,7 @@
 broadcastip: "10.42.0.255"
 port: 5000
 stations: 
-  - 30847e:
+  - id: 30847e
     x: 0
     y: 0
 
@@ -10,7 +10,7 @@ stations:
     x: 5
     y: 5
 
-  - a588e8:
+  - id: a588e8
     x: 0
     y: 10
 

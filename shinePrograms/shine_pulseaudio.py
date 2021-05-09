@@ -3,6 +3,7 @@ from queue import Queue
 from ctypes import POINTER, c_ubyte, c_void_p, c_ulong, cast
 from collections import deque
 import time
+import yaml
 
 import logging
 logging.basicConfig(
@@ -136,8 +137,19 @@ def dry_run():
 
 
 def main(dm, history_length=1000, send_timeout=8, meter_rate_fraction=2):
+    saved_stations = []
+    with open(r'pa_program_settings.yml') as file:
+        settings = yaml.load(file, Loader=yaml.FullLoader)
+        try:
+            saved_stations = settings["stations"]
+        except:
+            logger.error("pulse audio program settings file invalid!")
+            return
+
     current_meter_rate = int(DEFAULT_METER_RATE / meter_rate_fraction)
     monitor = PeakMonitor(SINK_NAME, current_meter_rate)
+
+
     previous_peaks = deque(maxlen=history_length)
     for sample in monitor:
         sample = sample - 128
@@ -148,14 +160,28 @@ def main(dm, history_length=1000, send_timeout=8, meter_rate_fraction=2):
         if (max(previous_peaks)-min(previous_peaks)) != 0:
             brightness = (sample-min(previous_peaks))/(max(previous_peaks)-min(previous_peaks))*(brightness_max-brightness_min)+brightness_min
         send_start_time = time.time()*1000 # ms
-        for station in dm.getDevices():
-            dm.sendColorSpecific(
-                {
-                    'r': (0),
-                    'g': (0),
-                    'b': (int(brightness)),
-                },
-                station['id'])
+        active_stations = dm.getDevices()
+        for saved_station in saved_stations:
+            for active_station in active_stations:
+                if saved_station["id"] == active_station["id"]:
+                    r = int(saved_station['r'] * brightness)
+                    g = int(saved_station['g'] * brightness)
+                    b = int(saved_station['b'] * brightness)
+                    if r < 0:
+                        r = 255 + r
+                    if g < 0:
+                        g = 255 + g
+                    if b < 0:
+                        b = 255 + b
+                    dm.sendColorSpecific(
+                        {
+                            'r': r,
+                            'g': g,
+                            'b': b
+                        },
+                        saved_station['id'])
+
+            
             if ((time.time()*1000) - send_start_time) > send_timeout:
                 logger.warning("Timeout detected! Recomposing device list")
                 dm.refreshDeviceList()
