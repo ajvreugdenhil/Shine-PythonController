@@ -55,7 +55,7 @@ class deviceManager:
         send_start_time = time.time()*1000 # ms
         self.sock.sendto(message, (ip, self.port))
         if ((time.time()*1000) - send_start_time) > send_timeout:
-            logger.error(f"Send timeout for {str(ip)}. Removing it.")
+            logger.error(f"Send timeout reached for {str(ip)}. Removing it.")
             try:
                 for i in range(len(self.devices)):
                     if self.devices[i]["ip"] == ip:
@@ -110,7 +110,7 @@ class registrationReceiverThread (threading.Thread):
             device_ip = address[0]
             device_id = message[1:7].decode("utf-8")
             device = {"ip": device_ip, "id": device_id.lower()}
-            logger.info(f"New device: {device}")
+            logger.info(f"Device registered: {device}")
             self.queueLock.acquire()
             self.q.put(device)
             self.queueLock.release()
