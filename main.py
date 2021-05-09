@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-from shineController import devicemanager
-from shinePrograms import thunder
-from shinePrograms import shineambiance
-from shinePrograms import shinelocation
 import signal
 import time
 import datetime
 import json
+from shineController import devicemanager
+from shinePrograms import shine_pulseaudio
 
 import logging
 logging.basicConfig(
@@ -39,11 +37,7 @@ def init():
 
 
 def main(dm, stations):
-    # directControl.main(dm)
-    # thunder.main(dm)
-
-    shineambiance.main(dm, 10)
-    #shinelocation.main(dm, stations, 120)
+    shine_pulseaudio.main(dm)
 
 
 if __name__ == '__main__':
